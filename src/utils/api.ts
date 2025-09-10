@@ -1,9 +1,17 @@
 import { toast } from "sonner";
 
-const BASE_API = import.meta.env.VITE_BASE_API || "http://localhost:8000";
+const DEV_ENVIRONMENT = import.meta.env.VITE_ENV;
+
+const DEV_BASE_API = import.meta.env.BASE_LOCAL_API || "http://localhost:8000";
+const PROD_BASE_API =
+	import.meta.env.VITE_PROD_BASE_API ||
+	"https://backend-redteam-portal.vercel.app/";
+
+const BASE_API =
+	DEV_ENVIRONMENT === "development" ? DEV_BASE_API : PROD_BASE_API;
 
 if (!BASE_API) {
-	toast.error("VITE_BASE_API is not set");
+	toast.error("BASE_API is not set");
 }
 
 export interface ApiOptions {

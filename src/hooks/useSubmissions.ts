@@ -82,11 +82,7 @@ export const useCreateSubmission = () => {
 		Error,
 		Omit<Submission, "id" | "submission_time">
 	>({
-		mutationFn: (submissionData) =>
-			apiPost("/submissions", submissionData, {
-				successMessage: "Submission created successfully!",
-				errorMessage: "Failed to create submission.",
-			}),
+		mutationFn: (submissionData) => apiPost("/submissions", submissionData),
 		onSuccess: (data) => {
 			// Invalidate relevant queries
 			queryClient.invalidateQueries({ queryKey: ["submissions"] });
