@@ -1,0 +1,44 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+	content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+	theme: {
+		extend: {
+			colors: {
+				// Custom color scheme for red-team portal
+				background: "#000000", // Pure black background
+				primary: {
+					DEFAULT: "#dc2626", // Red primary color
+					foreground: "#ffffff", // White text on primary
+				},
+				card: {
+					DEFAULT: "#111111", // Dark gray for elevated elements
+					foreground: "#ffffff", // White text on cards
+				},
+				secondary: {
+					DEFAULT: "#1f1f1f", // Slightly lighter for sections and inputs
+					foreground: "#ffffff", // White text on secondary
+				},
+				muted: {
+					DEFAULT: "#1f1f1f", // Same as secondary for consistency
+					foreground: "#a1a1aa", // Muted gray for secondary text
+				},
+				accent: {
+					DEFAULT: "#dc2626", // Red accent (same as primary)
+					foreground: "#ffffff", // White text on accent
+				},
+				destructive: {
+					DEFAULT: "#dc2626", // Red for destructive actions
+					foreground: "#ffffff", // White text on destructive
+				},
+				border: "#27272a", // Consistent dark gray borders
+				input: "#1f1f1f", // Input background
+				ring: "#dc2626", // Focus ring color (red)
+				foreground: "#ffffff", // Primary text color (white)
+				// Additional semantic colors
+				sidebar: "#111111", // Sidebar background
+				"sidebar-border": "#27272a", // Sidebar border
+			},
+		},
+	},
+	plugins: [],
+};
