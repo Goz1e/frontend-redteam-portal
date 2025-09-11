@@ -29,15 +29,11 @@ export interface ApiOptions {
  */
 export const apiFetch = async <T = any>(
 	endpoint: string,
-	options: ApiOptions = {}
+	options: ApiOptions = {},
 ): Promise<T> => {
 	const { method = "GET", headers = {}, body, showToast = true } = options;
 
 	const url = `${BASE_API}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
-
-	if (showToast) {
-		toast.info(`${method} ${url}`);
-	}
 
 	const config: RequestInit = {
 		method,
@@ -64,10 +60,6 @@ export const apiFetch = async <T = any>(
 
 		const data = await response.json();
 
-		if (showToast) {
-			toast.success(`${method} ${endpoint} successful`);
-		}
-
 		return data;
 	} catch (error) {
 		const errorMessage =
@@ -82,30 +74,30 @@ export const apiFetch = async <T = any>(
 // Convenience methods for common HTTP verbs
 export const apiGet = <T = any>(
 	endpoint: string,
-	showToast = true
+	showToast = true,
 ): Promise<T> => apiFetch<T>(endpoint, { method: "GET", showToast });
 
 export const apiPost = <T = any>(
 	endpoint: string,
 	body?: any,
-	showToast = true
+	showToast = true,
 ): Promise<T> => apiFetch<T>(endpoint, { method: "POST", body, showToast });
 
 export const apiPut = <T = any>(
 	endpoint: string,
 	body?: any,
-	showToast = true
+	showToast = true,
 ): Promise<T> => apiFetch<T>(endpoint, { method: "PUT", body, showToast });
 
 export const apiDelete = <T = any>(
 	endpoint: string,
-	showToast = true
+	showToast = true,
 ): Promise<T> => apiFetch<T>(endpoint, { method: "DELETE", showToast });
 
 export const apiPatch = <T = any>(
 	endpoint: string,
 	body?: any,
-	showToast = true
+	showToast = true,
 ): Promise<T> => apiFetch<T>(endpoint, { method: "PATCH", body, showToast });
 
 // Export the base API URL for use in other parts of the app

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useUser } from "@stackframe/react";
 import {
 	Home,
 	FileText,
@@ -11,7 +12,10 @@ import {
 	Plus,
 	ChevronLeft,
 	ChevronRight,
+	LogIn,
+	UserPlus,
 } from "lucide-react";
+import { usePolkadotWallet } from "@/hooks/usePolkadotWallet";
 
 interface SidebarProps {
 	isOpen: boolean;
@@ -23,27 +27,49 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 	const [walletHovered, setWalletHovered] = useState(false);
 	const navigate = useNavigate();
 	const location = useLocation();
+	const user = useUser(); // Get current authentication status
+	const {
+		balance,
+		isLoadingBalance,
+		disconnect,
+		formattedBalanceWithoutUnit,
+	} = usePolkadotWallet();
 
 	const navigation = [
-		{ to: "/challenges", id: "dashboard", label: "Dashboard", icon: Home },
+		{
+			to: "/challenges",
+			id: "dashboard",
+			label: "Dashboard",
+			icon: Home,
+			requiresAuth: false,
+		},
 		{
 			to: "/submissions",
 			id: "submissions",
 			label: "Submissions",
 			icon: FileText,
+			requiresAuth: true, // Requires authentication
 		},
 		{
 			to: "/profiles",
 			id: "profiles",
 			label: "Miner Profiles",
 			icon: Users,
+			requiresAuth: false,
 		},
-		{ to: "/payouts", id: "payouts", label: "Payouts", icon: DollarSign },
+		{
+			to: "/payouts",
+			id: "payouts",
+			label: "Payouts",
+			icon: DollarSign,
+			requiresAuth: false,
+		},
 		{
 			to: "/settings",
 			id: "settings",
 			label: "Settings",
 			icon: SettingsIcon,
+			requiresAuth: false,
 		},
 	];
 
@@ -105,33 +131,104 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 				</motion.button>
 			</div>
 
-			{/* New Submission Button */}
-			<div className="p-4">
-				<motion.button
-					onClick={() => navigate("/submissions")}
-					className="w-full bg-primary hover:bg-primary/90 text-primary-foreground relative overflow-hidden group rounded-md px-4 py-2 transition-all duration-200"
-					whileHover={{ scale: 1.02 }}
-					whileTap={{ scale: 0.98 }}
-				>
-					<motion.div className="absolute inset-0 bg-gradient-to-r from-primary to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-					<div className="relative z-10 flex items-center justify-center w-full">
-						<Plus className="h-4 w-4 mr-2" />
-						<AnimatePresence mode="wait">
-							{isOpen && (
-								<motion.span
-									key="text"
-									initial={{ opacity: 0, x: -10 }}
-									animate={{ opacity: 1, x: 0 }}
-									exit={{ opacity: 0, x: -10 }}
-									transition={{ duration: 0.2 }}
-								>
-									New Submission
-								</motion.span>
-							)}
-						</AnimatePresence>
-					</div>
-				</motion.button>
-			</div>
+			{/* New Submission Button - Only show if authenticated */}
+			{user && (
+				<div className={`${isOpen ? "p-4" : "p-2"}`}>
+					<motion.button
+						onClick={() => navigate("/submissions")}
+						className={`w-full bg-primary hover:bg-primary/90 text-primary-foreground relative overflow-hidden group rounded-md ${
+							isOpen ? "px-4" : "px-2"
+						} py-2 transition-all duration-200`}
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}
+					>
+						<motion.div className="absolute inset-0 bg-gradient-to-r from-primary to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+						<div className="relative z-10 flex items-center justify-center w-full">
+							<Plus
+								className={`h-4 w-4 ${isOpen ? "mr-2" : ""}`}
+							/>
+							<AnimatePresence mode="wait">
+								{isOpen && (
+									<motion.span
+										key="text"
+										initial={{ opacity: 0, x: -10 }}
+										animate={{ opacity: 1, x: 0 }}
+										exit={{ opacity: 0, x: -10 }}
+										transition={{ duration: 0.2 }}
+									>
+										New Submission
+									</motion.span>
+								)}
+							</AnimatePresence>
+						</div>
+					</motion.button>
+				</div>
+			)}
+
+			{/* Auth Buttons - Only show if not authenticated */}
+			{!user && (
+				<div className={`${isOpen ? "p-4" : "p-2"} space-y-3`}>
+					<motion.button
+						onClick={() =>
+							(window.location.href = "/handler/sign-in")
+						}
+						className={`w-full bg-primary hover:bg-primary/90 text-primary-foreground relative overflow-hidden group rounded-md ${
+							isOpen ? "px-4" : "px-2"
+						} py-2 transition-all duration-200`}
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}
+					>
+						<div className="relative z-10 flex items-center justify-center w-full">
+							<LogIn
+								className={`h-4 w-4 ${isOpen ? "mr-2" : ""}`}
+							/>
+							<AnimatePresence mode="wait">
+								{isOpen && (
+									<motion.span
+										key="text"
+										initial={{ opacity: 0, x: -10 }}
+										animate={{ opacity: 1, x: 0 }}
+										exit={{ opacity: 0, x: -10 }}
+										transition={{ duration: 0.2 }}
+									>
+										Sign In
+									</motion.span>
+								)}
+							</AnimatePresence>
+						</div>
+					</motion.button>
+
+					<motion.button
+						onClick={() =>
+							(window.location.href = "/handler/sign-up")
+						}
+						className={`w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground relative overflow-hidden group rounded-md ${
+							isOpen ? "px-4" : "px-2"
+						} py-2 transition-all duration-200 border border-border`}
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}
+					>
+						<div className="relative z-10 flex items-center justify-center w-full">
+							<UserPlus
+								className={`h-4 w-4 ${isOpen ? "mr-2" : ""}`}
+							/>
+							<AnimatePresence mode="wait">
+								{isOpen && (
+									<motion.span
+										key="text"
+										initial={{ opacity: 0, x: -10 }}
+										animate={{ opacity: 1, x: 0 }}
+										exit={{ opacity: 0, x: -10 }}
+										transition={{ duration: 0.2 }}
+									>
+										Sign Up
+									</motion.span>
+								)}
+							</AnimatePresence>
+						</div>
+					</motion.button>
+				</div>
+			)}
 
 			{/* Navigation */}
 			<nav className="flex-1 p-4 space-y-2">
@@ -143,6 +240,8 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 						"/payouts",
 						"/settings",
 					].includes(item.to);
+					const requiresAuth = item.requiresAuth;
+					const isAuthBlocked = requiresAuth && !user;
 
 					return (
 						<motion.div
@@ -153,15 +252,27 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 							className="relative"
 						>
 							<NavLink
-								to={isComingSoon ? location.pathname : item.to}
+								to={
+									isComingSoon || isAuthBlocked
+										? location.pathname
+										: item.to
+								}
 								onClick={(e) => {
 									if (isComingSoon) {
 										e.preventDefault();
 										toast("Coming soon...");
+									} else if (isAuthBlocked) {
+										e.preventDefault();
+										toast(
+											"Please sign in to access submissions",
+										);
+										// Optionally redirect to sign in
+										window.location.href =
+											"/handler/sign-in";
 									}
 								}}
 								className={`w-full justify-start relative group rounded-md px-3 py-2 transition-all duration-200 flex items-center ${"text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"} ${
-									isComingSoon ? "opacity-80" : ""
+									isComingSoon ? "opacity-60" : ""
 								}`}
 							>
 								<AnimatePresence>
@@ -201,82 +312,166 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 			</nav>
 
 			{/* Wallet Balance */}
-			<div className="p-4 border-t border-sidebar-border">
-				<motion.div
-					className="bg-card rounded-lg p-3 cursor-pointer transition-all duration-300"
-					onMouseEnter={() => setWalletHovered(true)}
-					onMouseLeave={() => setWalletHovered(false)}
-					whileHover={{ scale: 1.02 }}
-				>
-					<AnimatePresence mode="wait">
-						{isOpen && (
-							<motion.p
-								className="text-xs text-muted-foreground mb-1"
-								initial={{ opacity: 0 }}
-								animate={{ opacity: 1 }}
-								exit={{ opacity: 0 }}
-								transition={{ duration: 0.2 }}
-							>
-								Wallet Balance
-							</motion.p>
-						)}
-					</AnimatePresence>
-					<div className="flex items-center justify-between">
-						<div>
-							<motion.p
-								className="text-sm font-semibold text-foreground"
-								animate={{ scale: walletHovered ? 1.1 : 1 }}
-								transition={{ duration: 0.2 }}
-							>
-								2.45 TAO
-							</motion.p>
+			{isOpen && (
+				<div className="p-4 border-t border-sidebar-border">
+					<motion.div
+						className="bg-card rounded-lg p-3 cursor-pointer transition-all duration-300"
+						onMouseEnter={() => setWalletHovered(true)}
+						onMouseLeave={() => setWalletHovered(false)}
+						whileHover={{ scale: 1.02 }}
+					>
+						<AnimatePresence mode="wait">
+							{isOpen && (
+								<motion.p
+									className="text-xs text-muted-foreground mb-1"
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									exit={{ opacity: 0 }}
+									transition={{ duration: 0.2 }}
+								>
+									Wallet Balance
+								</motion.p>
+							)}
+						</AnimatePresence>
+						<div className="flex items-center justify-between">
+							<div>
+								<motion.p
+									className="text-sm font-semibold text-foreground"
+									animate={{ scale: walletHovered ? 1.1 : 1 }}
+									transition={{ duration: 0.2 }}
+								>
+									{isLoadingBalance ? (
+										<span className="animate-pulse">
+											Loading...
+										</span>
+									) : (
+										balance
+									)}
+								</motion.p>
+								<AnimatePresence mode="wait">
+									{isOpen && (
+										<motion.p
+											className="text-xs text-muted-foreground mt-0.5"
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											exit={{ opacity: 0 }}
+											transition={{ duration: 0.2 }}
+										>
+											{isLoadingBalance ? (
+												<span className="animate-pulse">
+													Loading...
+												</span>
+											) : (
+												<>
+													~{" "}
+													{(
+														Number(
+															formattedBalanceWithoutUnit,
+														) * 350
+													).toFixed(2)}{" "}
+													$USD
+												</>
+											)}
+										</motion.p>
+									)}
+								</AnimatePresence>
+							</div>
+						</div>
+						<motion.button
+							onClick={() => navigate("/payouts")}
+							className="w-full mt-2 bg-transparent border border-green-400/20  hover:bg-secondary/90 text-accent-foreground rounded px-3 py-1 text-sm transition-all duration-200"
+							whileHover={{ scale: 1.02 }}
+							whileTap={{ scale: 0.98 }}
+						>
 							<AnimatePresence mode="wait">
-								{isOpen && (
-									<motion.p
-										className="text-xs text-muted-foreground"
+								{isOpen ? (
+									<motion.span
+										key="withdraw"
 										initial={{ opacity: 0 }}
 										animate={{ opacity: 1 }}
 										exit={{ opacity: 0 }}
 										transition={{ duration: 0.2 }}
 									>
-										~$123.45 USD
-									</motion.p>
+										Withdraw
+									</motion.span>
+								) : (
+									<motion.span
+										key="w"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: 0.2 }}
+									>
+										W
+									</motion.span>
 								)}
 							</AnimatePresence>
-						</div>
-					</div>
-					<motion.button
-						onClick={() => navigate("/payouts")}
-						className="w-full mt-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded px-3 py-1 text-sm transition-all duration-200"
-						whileHover={{ scale: 1.02 }}
-						whileTap={{ scale: 0.98 }}
-					>
-						<AnimatePresence mode="wait">
-							{isOpen ? (
-								<motion.span
-									key="withdraw"
-									initial={{ opacity: 0 }}
-									animate={{ opacity: 1 }}
-									exit={{ opacity: 0 }}
-									transition={{ duration: 0.2 }}
-								>
-									Withdraw
-								</motion.span>
-							) : (
-								<motion.span
-									key="w"
-									initial={{ opacity: 0 }}
-									animate={{ opacity: 1 }}
-									exit={{ opacity: 0 }}
-									transition={{ duration: 0.2 }}
-								>
-									W
-								</motion.span>
-							)}
-						</AnimatePresence>
-					</motion.button>
-				</motion.div>
-			</div>
+						</motion.button>
+						<motion.button
+							onClick={() => disconnect()}
+							className="w-full mt-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded px-3 py-1 text-sm transition-all duration-200"
+							whileHover={{ scale: 1.02 }}
+							whileTap={{ scale: 0.98 }}
+						>
+							<AnimatePresence mode="wait">
+								{isOpen ? (
+									<motion.span
+										key="withdraw"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: 0.2 }}
+									>
+										Disconnect
+									</motion.span>
+								) : (
+									<motion.span
+										key="w"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: 0.2 }}
+									>
+										{"<-"}
+									</motion.span>
+								)}
+							</AnimatePresence>
+						</motion.button>
+						{user && (
+							<motion.button
+								onClick={() => user.signOut()}
+								className="w-full mt-2 bg-primary hover:bg-secondary/90 text-secondary-foreground rounded px-3 py-1 text-sm transition-all duration-200"
+								whileHover={{ scale: 1.02 }}
+								whileTap={{ scale: 0.98 }}
+							>
+								<AnimatePresence mode="wait">
+									{isOpen ? (
+										<motion.span
+											key="withdraw"
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											exit={{ opacity: 0 }}
+											transition={{ duration: 0.2 }}
+										>
+											Logout
+										</motion.span>
+									) : (
+										<motion.span
+											key="w"
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											exit={{ opacity: 0 }}
+											transition={{ duration: 0.2 }}
+										>
+											{"<-"}
+										</motion.span>
+									)}
+								</AnimatePresence>
+							</motion.button>
+						)}
+					</motion.div>
+				</div>
+			)}
 		</div>
 	);
 }

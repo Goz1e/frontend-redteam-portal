@@ -1,9 +1,32 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
 
 export default defineConfig({
-	plugins: [react()],
+	plugins: [
+		react(),
+		nodePolyfills({
+			// Enable polyfills for specific globals and modules
+			globals: {
+				Buffer: true,
+				global: true,
+				process: true,
+			},
+			// Enable polyfills for specific Node.js modules
+			protocolImports: true,
+		}),
+	],
+	define: {
+		global: "globalThis",
+	},
+	optimizeDeps: {
+		include: [
+			"@polkadot/extension-dapp",
+			"@polkadot/api",
+			"@polkadot/util",
+		],
+	},
 	resolve: {
 		extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
 		alias: {

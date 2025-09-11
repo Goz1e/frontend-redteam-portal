@@ -1,8 +1,4 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
-import "@rainbow-me/rainbowkit/styles.css";
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
-import { config } from "../../config";
 import { Toaster } from "@/components/ui/sonner";
 
 interface ProvidersProps {
@@ -38,22 +34,8 @@ export function Providers({ children }: ProvidersProps) {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			<WagmiProvider config={config}>
-				<RainbowKitProvider
-					theme={darkTheme({
-						accentColor: "#ff0000",
-						accentColorForeground: "white",
-						borderRadius: "medium",
-						fontStack: "system",
-						overlayBlur: "small",
-					})}
-					initialChain={config.chains[0]}
-					modalSize="compact"
-				>
-					{children}
-					<Toaster />
-				</RainbowKitProvider>
-			</WagmiProvider>
+			{children}
+			<Toaster />
 		</QueryClientProvider>
 	);
 }

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { User } from "lucide-react";
 import { CustomConnectButton } from "./CustomConnectButton";
+import { useUser } from "@stackframe/react";
 
 export function Header() {
 	const [logoHovered, setLogoHovered] = useState(false);
 	const [profileHovered, setProfileHovered] = useState(false);
 	const [logoSpinning, setLogoSpinning] = useState(false);
+	const user = useUser();
 
 	const onLogoClick = () => {
 		setLogoSpinning(true);
@@ -78,10 +80,16 @@ export function Header() {
 							<User className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-all duration-200" />
 						</motion.div>
 					</motion.div>
+
 					<motion.span
-						className="text-sm text-muted-foreground font-mono cursor-pointer hover:text-foreground transition-all duration-200"
+						className="text-sm text-muted-foreground font-mono cursor-pointer inline-flex gap-2 items-center hover:text-foreground transition-all duration-200"
 						animate={{ x: profileHovered ? 2 : 0 }}
 					>
+						<p>
+							{user && user.displayName
+								? user.displayName
+								: "Guest"}
+						</p>
 						<CustomConnectButton />
 					</motion.span>
 				</motion.div>

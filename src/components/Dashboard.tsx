@@ -23,7 +23,7 @@ export function Dashboard() {
 		{
 			title: "Total Earned",
 			value: "4.12 TAO",
-			subtitle: "≈$204.83 USD",
+			subtitle: "≈$1,244.83 USD",
 			icon: DollarSign,
 			color: "text-green-400",
 		},
@@ -43,7 +43,7 @@ export function Dashboard() {
 		},
 		{
 			title: "Success Rate",
-			value: "87%",
+			value: "--%",
 			subtitle: "Your submissions",
 			icon: TrendingUp,
 			color: "text-primary",
@@ -53,7 +53,6 @@ export function Dashboard() {
 	const {
 		data: challenges,
 		isLoading: isLoadingChallenges,
-		error: challengeError,
 		isError: isErrorChallenges,
 	} = useChallenges();
 
@@ -263,6 +262,7 @@ export function Dashboard() {
 						</CardHeader>
 						<CardContent className="space-y-3">
 							{!isLoadingChallenges &&
+								challenges &&
 								challenges.map(
 									(challenge: Challenge, index: number) => (
 										<motion.div
@@ -276,7 +276,7 @@ export function Dashboard() {
 											whileHover={{ scale: 1.02 }}
 											onClick={() =>
 												navigate(
-													`/challenges/${challenge.id}`
+													`/challenges/${challenge.id}`,
 												)
 											}
 										>
@@ -325,13 +325,31 @@ export function Dashboard() {
 												<ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
 											</div>
 										</motion.div>
-									)
+									),
 								)}
 							{isLoadingChallenges && (
 								<div className="flex items-center justify-center w-full ">
 									<Loader2 className="h-4 w-4 animate-spin" />
 								</div>
 							)}
+							{!isLoadingChallenges &&
+								!challenges &&
+								!isErrorChallenges && (
+									<div className="flex items-center justify-center w-full py-8">
+										<p className="text-sm text-muted-foreground">
+											No challenges available
+										</p>
+									</div>
+								)}
+							{!isLoadingChallenges &&
+								challenges &&
+								challenges.length === 0 && (
+									<div className="flex items-center justify-center w-full py-8">
+										<p className="text-sm text-muted-foreground">
+											No challenges found
+										</p>
+									</div>
+								)}
 							{isErrorChallenges && (
 								<div className="flex items-center justify-center">
 									<AlertTriangle className="h-4 w-4 text-red-500" />

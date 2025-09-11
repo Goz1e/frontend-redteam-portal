@@ -19,7 +19,15 @@ import {
 import { Alert, AlertDescription } from "./ui/alert";
 import { Progress } from "./ui/progress";
 import { useChallenges } from "../hooks/useChallenges";
-import { Challenge } from "../types/challenge";
+import {
+	useUserSubmissions,
+	useCreateSubmission,
+	useMinerProfileByUser,
+	useCreateMinerProfile,
+} from "../hooks/useSubmissions";
+import { Challenge, Submission } from "../types/challenge";
+import { useUser } from "@stackframe/react";
+import { toast } from "sonner";
 import {
 	Play,
 	Upload,
@@ -40,28 +48,35 @@ import {
 // Lazy-load Monaco (big dependency) to speed initial paint.
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
-/** ---------- constants outside the component so they aren't re-created ---------- */
+/** ---------- helper functions ---------- */
+// const formatTimeAgo = (dateString: string) => {
+// 	const date = new Date(dateString);
+// 	const now = new Date();
+// 	const diffInHours = Math.floor(
+// 		(now.getTime() - date.getTime()) / (1000 * 60 * 60)
+// 	);
 
-const RECENT_SUBMISSIONS = [
-	{
-		challenge: "Auto Browser Sniffer v3",
-		score: 0.91,
-		time: "2h ago",
-		status: "Processing",
-	},
-	{
-		challenge: "Humanize Behaviour v4",
-		score: 0.87,
-		time: "1d ago",
-		status: "Completed",
-	},
-	{
-		challenge: "Advanced Data Analysis",
-		score: 0.76,
-		time: "2d ago",
-		status: "Completed",
-	},
-] as const;
+// 	if (diffInHours < 1) return "Just now";
+// 	if (diffInHours < 24) return `${diffInHours}h ago`;
+// 	const diffInDays = Math.floor(diffInHours / 24);
+// 	if (diffInDays < 7) return `${diffInDays}d ago`;
+// 	return date.toLocaleDateString();
+// };
+
+const getStatusBadgeClass = (status: string) => {
+	switch (status.toLowerCase()) {
+		case "completed":
+			return "bg-green-900/20 text-green-400";
+		case "scored":
+			return "bg-green-900/20 text-green-400";
+		case "processing":
+			return "border-yellow-400/20 text-yellow-400";
+		case "failed":
+			return "bg-red-900/20 text-red-400";
+		default:
+			return "border-blue-400/20 text-blue-400";
+	}
+};
 
 /** ---------- types ---------- */
 type Language = "javascript" | "typescript" | "python";
@@ -84,12 +99,36 @@ export function Submissions() {
 	const [rulesExpanded, setRulesExpanded] = useState(false);
 	const [progress, setProgress] = useState(0); // for nicer test progress UI
 
+	// Get current user
+	const user = useUser();
+
+	// Get Polkadot wallet state (for optional rewards display)
+
 	// Fetch challenges data
 	const {
 		data: challenges,
 		isLoading: challengesLoading,
 		error: challengesError,
 	} = useChallenges();
+
+	// Fetch user submissions
+	const {
+		data: userSubmissions,
+		isLoading: submissionsLoading,
+		error: submissionsError,
+	} = useUserSubmissions(user?.id || "");
+
+	// Create submission mutation
+	const createSubmission = useCreateSubmission();
+
+	// Get or create miner profile using user ID
+	const {
+		data: minerProfile,
+		isLoading: minerProfileLoading,
+		isError: minerProfileError,
+	} = useMinerProfileByUser(user?.id || "");
+
+	const createMinerProfile = useCreateMinerProfile();
 
 	/** Stable editor options to avoid reconfiguring Monaco on each render */
 	const editorOptions = useMemo(
@@ -99,7 +138,7 @@ export function Submissions() {
 			minimap: { enabled: false },
 			automaticLayout: true,
 		}),
-		[]
+		[],
 	);
 
 	/** Toggle handlers (stable) */
@@ -142,10 +181,75 @@ export function Submissions() {
 		};
 	}, [selectedChallenge, code]);
 
-	const handleSubmit = useCallback(() => {
-		if (!testResults || !testResults.eslint.passed) return;
-		console.log("Submitting code for challenge:", selectedChallenge);
-	}, [testResults, selectedChallenge]);
+	const handleSubmit = useCallback(async () => {
+		if (
+			!testResults ||
+			!testResults.eslint.passed ||
+			!user?.id ||
+			!selectedChallenge
+		)
+			return;
+
+		// Check if miner profile exists, create if it doesn't
+		let currentMinerProfile = minerProfile;
+
+		if (!currentMinerProfile && !minerProfileError) {
+			// Still loading, wait
+			return;
+		}
+
+		if (!currentMinerProfile) {
+			// Create miner profile using user ID
+			try {
+				currentMinerProfile = await createMinerProfile.mutateAsync({
+					user_id: user.id, // Use logged-in user ID
+					trustTier: "bronze",
+					publicProfile: true,
+				});
+			} catch (error) {
+				const errorMessage = "Failed to create miner profile";
+				console.error(errorMessage, error);
+				toast.error(errorMessage);
+				return;
+			}
+		}
+
+		// Now create the submission
+		createSubmission.mutate(
+			{
+				miner: currentMinerProfile.id,
+				challenge: selectedChallenge,
+				code: code,
+				status: "pending",
+				score: testResults.logic.score,
+			},
+			{
+				onSuccess: () => {
+					// Reset form and show success message
+					console.log("Submission created successfully!");
+					toast.success("Solution submitted successfully!");
+					// Reset the form
+					setCode("");
+					setSelectedChallenge("");
+					setTestResults(null);
+				},
+				onError: (error) => {
+					const errorMessage = "Failed to create submission";
+					console.error(errorMessage, error);
+					toast.error(errorMessage);
+				},
+			},
+		);
+	}, [
+		testResults,
+		selectedChallenge,
+		user?.id,
+		code,
+		createSubmission,
+		minerProfile,
+		minerProfileError,
+		createMinerProfile,
+	]);
 
 	/** Load large base template from /examples/base.py (abortable + once) */
 	useEffect(() => {
@@ -163,7 +267,9 @@ export function Submissions() {
 				}
 			} catch (e) {
 				if ((e as any)?.name !== "AbortError") {
-					console.error("Failed to load base example", e);
+					const errorMessage = "Failed to load base example";
+					console.error(errorMessage, e);
+					toast.error(errorMessage);
 				}
 			}
 		})();
@@ -469,14 +575,64 @@ export function Submissions() {
 									onClick={handleSubmit}
 									disabled={
 										!testResults ||
-										!testResults.eslint.passed
+										!testResults.eslint.passed ||
+										!user?.id ||
+										!selectedChallenge ||
+										createSubmission.isPending ||
+										createMinerProfile.isPending ||
+										minerProfileLoading
 									}
 									className="bg-green-600 hover:bg-green-700"
 								>
-									<Upload className="h-4 w-4 mr-2" />
-									Submit Solution
+									{createSubmission.isPending ||
+									createMinerProfile.isPending ? (
+										<>
+											<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+											{createMinerProfile.isPending
+												? "Setting up profile..."
+												: "Submitting..."}
+										</>
+									) : (
+										<>
+											<Upload className="h-4 w-4 mr-2" />
+											Submit Solution
+										</>
+									)}
 								</Button>
 							</div>
+
+							{/* Submission Status */}
+							{createSubmission.isSuccess && (
+								<Alert className="bg-green-900/20 border-green-400/20">
+									<CheckCircle className="h-4 w-4 text-green-400" />
+									<AlertDescription className="text-green-300">
+										Submission created successfully! Your
+										solution is now being processed.
+									</AlertDescription>
+								</Alert>
+							)}
+
+							{createSubmission.isError && (
+								<Alert className="bg-red-900/20 border-red-400/20">
+									<XCircle className="h-4 w-4 text-red-400" />
+									<AlertDescription className="text-red-300">
+										Failed to submit solution:{" "}
+										{createSubmission.error?.message ||
+											"Unknown error"}
+									</AlertDescription>
+								</Alert>
+							)}
+
+							{createMinerProfile.isError && (
+								<Alert className="bg-red-900/20 border-red-400/20">
+									<XCircle className="h-4 w-4 text-red-400" />
+									<AlertDescription className="text-red-300">
+										Failed to set up miner profile:{" "}
+										{createMinerProfile.error?.message ||
+											"Unknown error"}
+									</AlertDescription>
+								</Alert>
+							)}
 						</CardContent>
 					</Card>
 
@@ -575,7 +731,7 @@ export function Submissions() {
 													</div>
 													<span className="text-sm font-medium text-foreground">
 														{testResults.logic.score.toFixed(
-															2
+															2,
 														)}
 													</span>
 												</div>
@@ -589,7 +745,7 @@ export function Submissions() {
 													</div>
 													<span className="text-sm font-medium text-foreground">
 														{testResults.comparison.score.toFixed(
-															2
+															2,
 														)}
 													</span>
 												</div>
@@ -636,7 +792,7 @@ export function Submissions() {
 												<AlertDescription className="text-yellow-300">
 													Warning: Comparison score is{" "}
 													{testResults.comparison.score.toFixed(
-														2
+														2,
 													)}
 													, which is above the 0.7
 													threshold. This may
@@ -709,40 +865,76 @@ export function Submissions() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3">
-							{RECENT_SUBMISSIONS.map((s, i) => (
-								<div
-									key={i}
-									className="p-3 bg-secondary rounded-lg"
-								>
-									<div className="flex justify-between items-start mb-1">
-										<p className="text-sm font-medium text-foreground">
-											{s.challenge}
-										</p>
-										<Badge
-											variant={
-												s.status === "Completed"
-													? "secondary"
-													: "outline"
-											}
-											className={
-												s.status === "Completed"
-													? "bg-green-900/20 text-green-400"
-													: "border-yellow-400/20 text-yellow-400"
-											}
-										>
-											{s.status}
-										</Badge>
-									</div>
-									<div className="flex justify-between items-center">
-										<span className="text-xs text-muted-foreground">
-											{s.time}
-										</span>
-										<span className="text-xs text-foreground">
-											Score: {s.score}
-										</span>
+							{submissionsLoading ? (
+								<div className="p-3 bg-secondary rounded-lg">
+									<div className="text-sm text-muted-foreground">
+										Loading submissions...
 									</div>
 								</div>
-							))}
+							) : submissionsError ? (
+								<div className="p-3 bg-secondary rounded-lg">
+									<div className="text-sm text-red-400">
+										Error loading submissions
+									</div>
+								</div>
+							) : userSubmissions &&
+							  userSubmissions.length > 0 ? (
+								userSubmissions
+									.slice(0, 3) // Show only the 3 most recent
+									.map((submission: Submission) => {
+										return (
+											<div
+												key={submission.id}
+												className="p-3 bg-secondary rounded-lg"
+											>
+												<div className="flex justify-between items-start mb-1">
+													<p className="text-sm font-medium text-foreground">
+														{submission.challenge_name ||
+															"Unknown Challenge"}
+													</p>
+													<Badge
+														variant={
+															submission.status ===
+															"completed"
+																? "secondary"
+																: "outline"
+														}
+														className={getStatusBadgeClass(
+															submission.status,
+														)}
+													>
+														{submission.status
+															.charAt(0)
+															.toUpperCase() +
+															submission.status.slice(
+																1,
+															)}
+													</Badge>
+												</div>
+												<div className="flex justify-between items-center">
+													<span className="text-xs text-muted-foreground">
+														{/* {formatTimeAgo(
+															submission.submission_time
+														)} */}
+														...
+													</span>
+													<span className="text-xs text-foreground">
+														Score:{" "}
+														{submission.score?.toFixed(
+															2,
+														) || "N/A"}
+													</span>
+												</div>
+											</div>
+										);
+									})
+							) : (
+								<div className="p-3 bg-secondary rounded-lg">
+									<div className="text-sm text-muted-foreground">
+										No submissions yet
+									</div>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				</div>

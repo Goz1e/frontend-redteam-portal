@@ -15,24 +15,37 @@ export interface Challenge {
 
 export interface Submission {
 	id: string;
-	miner_id: string;
+	user_id: string; // References neon_auth.users_sync(id)
+	miner_profile_id: string;
 	challenge_id: string;
-	score: number;
+	challenge_name: string; // Challenge name for easy display
+	score?: number; // Optional - can be null initially
 	submission_time: string;
-	status: "pending" | "processing" | "completed" | "failed";
+	status: "pending" | "processing" | "completed" | "failed" | "scored";
 	code: string;
-	test_results?: string;
-	miner_ref?: Miner;
+	test_results?: string; // JSON string of test results
+	miner_ref?: MinerProfile;
 	challenge_ref?: Challenge;
 }
 
-export interface Miner {
+// Backend API response format (different field names)
+export interface BackendSubmission {
 	id: string;
-	email: string;
-	fullAddress: string;
-	name: string;
+	miner: string; // Backend uses 'miner' instead of 'miner_profile_id'
+	challenge: string; // Backend uses 'challenge' instead of 'challenge_id'
+	challenge_name: string;
+	score?: number;
+	time?: string; // Backend uses 'time' instead of 'submission_time'
+	status: "pending" | "processing" | "completed" | "failed" | "scored";
+	code: string;
+}
+
+export interface MinerProfile {
+	id: string;
+	user_id: string; // References neon_auth.users_sync(id)
+	walletAddress?: string; // Wallet address (renamed from fullAddress)
 	totalScore: number;
-	rank: number;
+	rank?: number;
 	submissions: number;
 	successRate: number;
 	totalEarned: string;
@@ -41,6 +54,24 @@ export interface Miner {
 	trustTier: string;
 	publicProfile: boolean;
 	miner_submissions?: Submission[];
+}
+
+export interface NeonAuthUser {
+	id: string;
+	name: string;
+	email: string;
+	created_at: string;
+}
+
+export interface CompleteUserProfile {
+	user: NeonAuthUser;
+	miner_profile?: MinerProfile;
+}
+
+// Keep Miner interface for backward compatibility (deprecated)
+export interface Miner extends MinerProfile {
+	email: string;
+	name: string;
 }
 
 export interface ChallengeCardProps {
