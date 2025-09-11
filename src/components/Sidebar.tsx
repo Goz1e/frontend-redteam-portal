@@ -33,6 +33,7 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 		isLoadingBalance,
 		disconnect,
 		formattedBalanceWithoutUnit,
+		address,
 	} = usePolkadotWallet();
 
 	const navigation = [
@@ -349,94 +350,98 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 									)}
 								</motion.p>
 								<AnimatePresence mode="wait">
-									{isOpen && (
-										<motion.p
-											className="text-xs text-muted-foreground mt-0.5"
-											initial={{ opacity: 0 }}
-											animate={{ opacity: 1 }}
-											exit={{ opacity: 0 }}
-											transition={{ duration: 0.2 }}
-										>
-											{isLoadingBalance ? (
-												<span className="animate-pulse">
-													Loading...
-												</span>
-											) : (
-												<>
-													~{" "}
-													{(
-														Number(
-															formattedBalanceWithoutUnit,
-														) * 350
-													).toFixed(2)}{" "}
-													$USD
-												</>
-											)}
-										</motion.p>
-									)}
+									<motion.p
+										className="text-xs text-muted-foreground mt-0.5"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: 0.2 }}
+									>
+										{isLoadingBalance ? (
+											<span className="animate-pulse">
+												Loading...
+											</span>
+										) : (
+											<>
+												~{" "}
+												{(
+													Number(
+														formattedBalanceWithoutUnit,
+													) * 350
+												).toFixed(2)}{" "}
+												$USD
+											</>
+										)}
+									</motion.p>
 								</AnimatePresence>
 							</div>
 						</div>
-						<motion.button
-							onClick={() => navigate("/payouts")}
-							className="w-full mt-2 bg-transparent border border-green-400/20  hover:bg-secondary/90 text-accent-foreground rounded px-3 py-1 text-sm transition-all duration-200"
-							whileHover={{ scale: 1.02 }}
-							whileTap={{ scale: 0.98 }}
-						>
-							<AnimatePresence mode="wait">
-								{isOpen ? (
-									<motion.span
-										key="withdraw"
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										exit={{ opacity: 0 }}
-										transition={{ duration: 0.2 }}
-									>
-										Withdraw
-									</motion.span>
-								) : (
-									<motion.span
-										key="w"
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										exit={{ opacity: 0 }}
-										transition={{ duration: 0.2 }}
-									>
-										W
-									</motion.span>
-								)}
-							</AnimatePresence>
-						</motion.button>
-						<motion.button
-							onClick={() => disconnect()}
-							className="w-full mt-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded px-3 py-1 text-sm transition-all duration-200"
-							whileHover={{ scale: 1.02 }}
-							whileTap={{ scale: 0.98 }}
-						>
-							<AnimatePresence mode="wait">
-								{isOpen ? (
-									<motion.span
-										key="withdraw"
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										exit={{ opacity: 0 }}
-										transition={{ duration: 0.2 }}
-									>
-										Disconnect
-									</motion.span>
-								) : (
-									<motion.span
-										key="w"
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										exit={{ opacity: 0 }}
-										transition={{ duration: 0.2 }}
-									>
-										{"<-"}
-									</motion.span>
-								)}
-							</AnimatePresence>
-						</motion.button>
+						{address && (
+							<>
+								<motion.button
+									onClick={() => navigate("/payouts")}
+									className="w-full mt-2 bg-transparent border border-green-400/20  hover:bg-secondary/90 text-accent-foreground rounded px-3 py-1 text-sm transition-all duration-200"
+									whileHover={{ scale: 1.02 }}
+									whileTap={{ scale: 0.98 }}
+								>
+									<AnimatePresence mode="wait">
+										{isOpen ? (
+											<motion.span
+												key="withdraw"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.2 }}
+											>
+												Withdraw
+											</motion.span>
+										) : (
+											<motion.span
+												key="w"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.2 }}
+											>
+												W
+											</motion.span>
+										)}
+									</AnimatePresence>
+								</motion.button>
+
+								<motion.button
+									onClick={() => disconnect()}
+									className="w-full mt-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded px-3 py-1 text-sm transition-all duration-200"
+									whileHover={{ scale: 1.02 }}
+									whileTap={{ scale: 0.98 }}
+								>
+									<AnimatePresence mode="wait">
+										{isOpen ? (
+											<motion.span
+												key="disconnect"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.2 }}
+											>
+												Disconnect
+											</motion.span>
+										) : (
+											<motion.span
+												key="d"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.2 }}
+											>
+												{"<-"}
+											</motion.span>
+										)}
+									</AnimatePresence>
+								</motion.button>
+							</>
+						)}
+
 						{user && (
 							<motion.button
 								onClick={() => user.signOut()}
@@ -447,7 +452,7 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 								<AnimatePresence mode="wait">
 									{isOpen ? (
 										<motion.span
-											key="withdraw"
+											key="logout"
 											initial={{ opacity: 0 }}
 											animate={{ opacity: 1 }}
 											exit={{ opacity: 0 }}
@@ -457,7 +462,7 @@ export function Sidebar({ isOpen, setIsOpen, onBackToLanding }: SidebarProps) {
 										</motion.span>
 									) : (
 										<motion.span
-											key="w"
+											key="l"
 											initial={{ opacity: 0 }}
 											animate={{ opacity: 1 }}
 											exit={{ opacity: 0 }}
