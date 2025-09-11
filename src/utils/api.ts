@@ -2,9 +2,10 @@ import { toast } from "sonner";
 
 const DEV_ENVIRONMENT = import.meta.env.VITE_ENV;
 
-const DEV_BASE_API = import.meta.env.BASE_LOCAL_API || "http://localhost:8000";
+const DEV_BASE_API =
+	import.meta.env.VITE_BASE_LOCAL_API || "http://localhost:8000";
 const PROD_BASE_API =
-	import.meta.env.VITE_PROD_BASE_API ||
+	import.meta.env.VITE_BASE_LIVE_API ||
 	"https://backend-redteam-portal.vercel.app/";
 
 const BASE_API =
